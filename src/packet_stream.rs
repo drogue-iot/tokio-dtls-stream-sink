@@ -6,7 +6,7 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_util::codec::{BytesCodec, Framed};
 
 pub trait PacketStream:
-    futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin
+    futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin + Send
 {
 }
 
@@ -14,7 +14,7 @@ pub(crate) struct FramedPacketStream<T>(pub(crate) Framed<T, BytesCodec>)
 where
     T: AsyncRead + AsyncWrite + Unpin;
 
-impl<T> PacketStream for FramedPacketStream<T> where T: AsyncRead + AsyncWrite + Unpin {}
+impl<T> PacketStream for FramedPacketStream<T> where T: AsyncRead + AsyncWrite + Unpin + Send {}
 
 impl<T> futures::Sink<Bytes> for FramedPacketStream<T>
 where

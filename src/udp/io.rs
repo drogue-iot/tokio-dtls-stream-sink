@@ -61,15 +61,6 @@ impl UdpIo {
         let mut rx_done = self.rx_done.lock().await;
         loop {
             tokio::select! {
-                done = rx_done.recv() => {
-                    if let Some(peer) = done {
-                        let mut peers = self.peers.lock().await;
-                        let _ = peers.remove(&peer);
-                    }
-                }
-                _ = &mut stop => {
-                    return Ok(());
-                }
                 inbound = self.socket.recv_from(&mut buf) => {
                     match inbound {
                         Ok((size, src)) => {
@@ -82,7 +73,8 @@ impl UdpIo {
                                     if let Some(acceptor) = &mut acceptor {
                                         let (tx_in, rx_in) = mpsc::channel(10);
                                         let tx_out = self.tx_out.clone();
-                                        let udp = UdpStream::new(src, tx_out, rx_in);
+                                        let tx_done = self.tx_done.clone();
+                                        let udp = UdpStream::new(src, tx_out, rx_in, tx_done);
                                         let r = if udp.is_ok() {
                                             Some(v.insert(tx_in))
                                         } else {
@@ -109,7 +101,8 @@ impl UdpIo {
                         }
                     }
                 }
-                outbound = rx_out.recv() => match outbound {
+                outbound = rx_out.recv() => {
+                    match outbound {
                     Some((dest, data)) => {
                         match self.socket.send_to(&data[..], &dest).await {
                             Ok(_) => {}
@@ -122,6 +115,16 @@ impl UdpIo {
                     None => {
                         return Ok(())
                     }
+                    }
+                }
+                done = rx_done.recv() => {
+                    if let Some(peer) = done {
+                        let mut peers = self.peers.lock().await;
+                        let _ = peers.remove(&peer);
+                    }
+                }
+                _ = &mut stop => {
+                    return Ok(());
                 }
             }
         }

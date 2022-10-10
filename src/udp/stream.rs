@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use futures::SinkExt;
 
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -98,10 +99,12 @@ impl AsyncWrite for UdpStream {
     }
 
     fn poll_flush(
-        self: Pin<&mut Self>,
-        _: &mut std::task::Context<'_>,
+        mut self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
     ) -> Poll<Result<(), std::io::Error>> {
-        Poll::Ready(Ok(()))
+        self.tx
+            .poll_flush_unpin(cx)
+            .map_err(|_| std::io::Error::new(ErrorKind::BrokenPipe, "Flush error"))
     }
 
     fn poll_shutdown(
