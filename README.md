@@ -1,7 +1,7 @@
-# tokio-dtls-stream
+# tokio-dtls-stream-sink
 
-[![CI](https://github.com/drogue-iot/tokio-dtls-stream/workflows/CI/badge.svg)](https://github.com/drogue-iot/tokio-dtls-stream/actions?query=workflow%3A%22CI%22)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/drogue-iot/tokio-dtls-stream?sort=semver)](https://github.com/drogue-iot/tokio-dtls-stream/releases)
+[![CI](https://github.com/drogue-iot/tokio-dtls-stream-sink/workflows/CI/badge.svg)](https://github.com/drogue-iot/tokio-dtls-stream-sink/actions?query=workflow%3A%22CI%22)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/tag/drogue-iot/tokio-dtls-stream-sink?sort=semver)](https://github.com/drogue-iot/tokio-dtls-stream-sink/releases)
 [![Matrix](https://img.shields.io/matrix/drogue-iot:matrix.org)](https://matrix.to/#/#drogue-iot:matrix.org)
 
 Tokio-based streaming API for UDP datagrams over DTLS. 
