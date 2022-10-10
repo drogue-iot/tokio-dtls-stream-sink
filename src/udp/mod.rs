@@ -1,8 +1,4 @@
-pub mod client;
-mod io;
-pub mod server;
+pub(crate) mod io;
 pub mod stream;
 
-pub use client::*;
-pub use server::*;
 pub use stream::*;

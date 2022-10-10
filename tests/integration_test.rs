@@ -1,10 +1,12 @@
-use tokio_dtls_stream::udp::UdpClient;
-use tokio_dtls_stream::udp::UdpServer;
+use futures::SinkExt;
+use futures::StreamExt;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UdpSocket;
+use tokio_dtls_stream::Client;
+use tokio_dtls_stream::Server;
 
 #[tokio::test]
-async fn test_client() {
+async fn test_plain_client() {
     let client = UdpSocket::bind("127.0.0.1:0").await.unwrap();
     let server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
     let saddr = server.local_addr().unwrap();
@@ -21,12 +23,11 @@ async fn test_client() {
         }
     });
 
-    let client = UdpClient::new(client);
+    let client = Client::new(client);
 
-    let mut stream = client.connect(saddr).await.unwrap();
-    let mut rx = [0; 4];
-    stream.write(b"PING").await.unwrap();
-    stream.read(&mut rx).await.unwrap();
+    let mut stream = client.connect(saddr, None).await.unwrap();
+    stream.send("PING".into()).await.unwrap();
+    let rx = stream.next().await.unwrap().unwrap();
     s.await.unwrap();
 
     assert_eq!(b"PING", &rx[..]);
@@ -36,11 +37,11 @@ async fn test_client() {
 }
 
 #[tokio::test]
-async fn test_server() {
+async fn test_plain_server() {
     let server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
     let saddr = server.local_addr().unwrap();
 
-    let mut server = UdpServer::new(server);
+    let mut server = Server::new(server);
     let s = tokio::spawn(async move {
         let mut c = server.accept().await.unwrap();
         let mut buf = [0; 2048];

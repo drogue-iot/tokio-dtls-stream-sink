@@ -8,7 +8,9 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 tokio = { version = "1", features = ["net", "macros", "rt", "io-util", "time"] }
-tokio-util = "0.7"
+tokio-util = { version = "0.7", features = [ "codec" ] }
+tokio-openssl = "0.6"
 bytes = "1"
 log = "0.4"
 futures = "0.3"
+openssl = { version = "0.10", features = ["v111"] }
