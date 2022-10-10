@@ -6,18 +6,18 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_util::codec::{BytesCodec, Framed};
 
 /// Unified trait for a packet stream and sink
-pub trait PacketStream:
+pub trait PacketFramed:
     futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin + Send
 {
 }
 
-pub(crate) struct FramedPacketStream<T>(pub(crate) Framed<T, BytesCodec>)
+pub(crate) struct FramedWrapper<T>(pub(crate) Framed<T, BytesCodec>)
 where
     T: AsyncRead + AsyncWrite + Unpin;
 
-impl<T> PacketStream for FramedPacketStream<T> where T: AsyncRead + AsyncWrite + Unpin + Send {}
+impl<T> PacketFramed for FramedWrapper<T> where T: AsyncRead + AsyncWrite + Unpin + Send {}
 
-impl<T> futures::Sink<Bytes> for FramedPacketStream<T>
+impl<T> futures::Sink<Bytes> for FramedWrapper<T>
 where
     T: AsyncRead + AsyncWrite + Unpin,
 {
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<T> futures::Stream for FramedPacketStream<T>
+impl<T> futures::Stream for FramedWrapper<T>
 where
     T: AsyncRead + AsyncWrite + Unpin,
 {

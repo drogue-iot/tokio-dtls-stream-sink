@@ -9,4 +9,4 @@ pub use server::*;
 
 pub(crate) mod packet_stream;
 mod udp;
-pub use packet_stream::PacketStream;
+pub use packet_stream::PacketFramed;

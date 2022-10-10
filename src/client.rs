@@ -37,7 +37,7 @@ impl Client {
         &self,
         peer: S,
         tls: Option<SslContext>,
-    ) -> Result<Box<dyn PacketStream>> {
+    ) -> Result<Box<dyn PacketFramed>> {
         let mut bind = peer.to_socket_addrs()?;
         if let Some(peer) = bind.next() {
             let r = self.io.connect(peer).await?;
@@ -46,9 +46,9 @@ impl Client {
                 Pin::new(&mut dtls).connect().await.map_err(|_| {
                     StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                 })?;
-                Ok(Box::new(FramedPacketStream(BytesCodec::new().framed(dtls))))
+                Ok(Box::new(FramedWrapper(BytesCodec::new().framed(dtls))))
             } else {
-                Ok(Box::new(FramedPacketStream(BytesCodec::new().framed(r))))
+                Ok(Box::new(FramedWrapper(BytesCodec::new().framed(r))))
             }
         } else {
             Err(std::io::Error::new(

@@ -32,7 +32,7 @@ impl Server {
     }
 
     /// Accept a connection and perform DTLS handshake if context is provided.
-    pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Box<dyn PacketStream>> {
+    pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Box<dyn PacketFramed>> {
         match self.accept_rx.recv().await {
             Some(s) => {
                 let s = s?;
@@ -41,9 +41,9 @@ impl Server {
                     Pin::new(&mut dtls).accept().await.map_err(|_| {
                         StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                     })?;
-                    Ok(Box::new(FramedPacketStream(BytesCodec::new().framed(dtls))))
+                    Ok(Box::new(FramedWrapper(BytesCodec::new().framed(dtls))))
                 } else {
-                    Ok(Box::new(FramedPacketStream(BytesCodec::new().framed(s))))
+                    Ok(Box::new(FramedWrapper(BytesCodec::new().framed(s))))
                 }
             }
             None => Err(std::io::Error::new(
