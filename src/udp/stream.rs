@@ -15,6 +15,7 @@ pub struct UdpStream {
     peer: SocketAddr,
     tx: PollSender<(SocketAddr, Bytes)>,
     rx: mpsc::Receiver<Bytes>,
+    done: mpsc::Sender<SocketAddr>,
 }
 
 impl UdpStream {
@@ -22,6 +23,7 @@ impl UdpStream {
         peer: S,
         tx: mpsc::Sender<(SocketAddr, Bytes)>,
         rx: mpsc::Receiver<Bytes>,
+        done: mpsc::Sender<SocketAddr>,
     ) -> std::io::Result<Self> {
         let mut bind = peer.to_socket_addrs()?;
         if let Some(peer) = bind.next() {
@@ -29,6 +31,7 @@ impl UdpStream {
                 peer,
                 tx: PollSender::new(tx),
                 rx,
+                done,
             })
         } else {
             Err(std::io::Error::new(
@@ -40,6 +43,12 @@ impl UdpStream {
 
     pub fn peer(&self) -> SocketAddr {
         self.peer
+    }
+}
+
+impl Drop for UdpStream {
+    fn drop(&mut self) {
+        let _ = self.done.try_send(self.peer);
     }
 }
 

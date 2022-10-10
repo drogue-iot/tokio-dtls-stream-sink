@@ -1,11 +1,11 @@
 use bytes::Bytes;
 use std::collections::{hash_map::Entry, HashMap};
 use std::io::Result;
+use std::io::{Error as StdError, ErrorKind};
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
-use std::io::{Error as StdError, ErrorKind};
 use tokio::sync::Mutex;
 
 use super::stream::UdpStream;
@@ -17,16 +17,22 @@ pub struct UdpIo {
     tx_out: mpsc::Sender<(SocketAddr, Bytes)>,
     rx_out: Mutex<mpsc::Receiver<(SocketAddr, Bytes)>>,
 
+    tx_done: mpsc::Sender<SocketAddr>,
+    rx_done: Mutex<mpsc::Receiver<SocketAddr>>,
+
     peers: Mutex<HashMap<SocketAddr, mpsc::Sender<Bytes>>>,
 }
 
 impl UdpIo {
     pub(crate) fn new(socket: UdpSocket) -> Self {
         let (tx_out, rx_out) = mpsc::channel(10);
+        let (tx_done, rx_done) = mpsc::channel(10);
         Self {
             socket,
             tx_out,
             rx_out: Mutex::new(rx_out),
+            tx_done,
+            rx_done: Mutex::new(rx_done),
             peers: Mutex::new(HashMap::new()),
         }
     }
@@ -34,24 +40,33 @@ impl UdpIo {
     pub(crate) async fn connect(&self, peer: SocketAddr) -> Result<UdpStream> {
         let mut peers = self.peers.lock().await;
         if peers.contains_key(&peer) {
-            return Err(StdError::new(
-                ErrorKind::AlreadyExists,
-                "Already connected",
-            ));
+            return Err(StdError::new(ErrorKind::AlreadyExists, "Already connected"));
         }
 
         let (tx_in, rx_in) = mpsc::channel(10);
         let tx_out = self.tx_out.clone();
-        let udp = UdpStream::new(peer, tx_out, rx_in)?;
+        let tx_done = self.tx_done.clone();
+        let udp = UdpStream::new(peer, tx_out, rx_in, tx_done)?;
         peers.insert(peer, tx_in);
         Ok(udp)
     }
 
-    pub(crate) async fn run(&self, mut stop: oneshot::Receiver<()>, mut acceptor: Option<mpsc::Sender<Result<UdpStream>>>) -> Result<()> {
+    pub(crate) async fn run(
+        &self,
+        mut stop: oneshot::Receiver<()>,
+        mut acceptor: Option<mpsc::Sender<Result<UdpStream>>>,
+    ) -> Result<()> {
         let mut buf = [0; 2048];
         let mut rx_out = self.rx_out.lock().await;
+        let mut rx_done = self.rx_done.lock().await;
         loop {
             tokio::select! {
+                done = rx_done.recv() => {
+                    if let Some(peer) = done {
+                        let mut peers = self.peers.lock().await;
+                        let _ = peers.remove(&peer);
+                    }
+                }
                 _ = &mut stop => {
                     return Ok(());
                 }
