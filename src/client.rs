@@ -1,5 +1,5 @@
+//! Client side UDP/DTLS.
 use crate::udp::io::UdpIo;
-
 use openssl::ssl::{Ssl, SslContext};
 use std::io::Result;
 use std::io::{Error as StdError, ErrorKind};
@@ -13,12 +13,14 @@ use tokio_util::codec::{BytesCodec, Decoder};
 
 use super::packet_stream::*;
 
+/// A client capable of creating multiple UDP + DTLS sessions.
 pub struct Client {
     io: Arc<UdpIo>,
     stop: Option<oneshot::Sender<()>>,
 }
 
 impl Client {
+    /// Create a new client instance with a bound UdpSocket.
     pub fn new(socket: UdpSocket) -> Self {
         let (stop, stop_rx) = oneshot::channel();
         let io = Arc::new(UdpIo::new(socket));
@@ -30,6 +32,7 @@ impl Client {
         }
     }
 
+    /// Create a stream for a peer and perform DTLS handshake if context is provided.
     pub async fn connect<S: ToSocketAddrs>(
         &self,
         peer: S,

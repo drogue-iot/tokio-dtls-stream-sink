@@ -5,6 +5,7 @@ use std::pin::Pin;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_util::codec::{BytesCodec, Framed};
 
+/// Unified trait for a packet stream and sink
 pub trait PacketStream:
     futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin + Send
 {

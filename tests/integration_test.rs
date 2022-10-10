@@ -1,7 +1,7 @@
 use futures::SinkExt;
 use futures::StreamExt;
-use openssl::ssl::{Ssl, SslContext, SslFiletype, SslMethod};
-use std::path::{Path, PathBuf};
+use openssl::ssl::{SslContext, SslFiletype, SslMethod};
+use std::path::PathBuf;
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot;
 

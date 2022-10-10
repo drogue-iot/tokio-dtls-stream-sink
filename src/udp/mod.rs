@@ -1,4 +1,3 @@
+//! Low level UDP handling.
 pub(crate) mod io;
-pub mod stream;
-
-pub use stream::*;
+pub(crate) mod stream;

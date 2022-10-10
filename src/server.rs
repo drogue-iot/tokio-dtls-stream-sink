@@ -1,3 +1,4 @@
+//! Server side UDP/DTLS.
 use super::packet_stream::*;
 use crate::udp::io::UdpIo;
 use crate::udp::stream::UdpStream;
@@ -9,12 +10,15 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_openssl::SslStream;
 use tokio_util::codec::{BytesCodec, Decoder};
 
+/// Instance of a UDP (+ DTLS) server that can accept new connections in form of
+/// of a packet stream/sink.
 pub struct Server {
     stop: Option<oneshot::Sender<()>>,
     accept_rx: mpsc::Receiver<Result<UdpStream>>,
 }
 
 impl Server {
+    /// Create a new server instance for a bound UdpSocket.
     pub fn new(socket: UdpSocket) -> Self {
         let (stop, stop_rx) = oneshot::channel();
         let (accept_tx, accept_rx) = mpsc::channel(10);
@@ -27,6 +31,7 @@ impl Server {
         }
     }
 
+    /// Accept a connection and perform DTLS handshake if context is provided.
     pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Box<dyn PacketStream>> {
         match self.accept_rx.recv().await {
             Some(s) => {

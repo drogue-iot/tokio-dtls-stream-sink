@@ -12,7 +12,7 @@ use tokio::sync::mpsc;
 use tokio_util::sync::PollSender;
 
 /// Represents a stream of UDP datagrams between ourselves and a peer.
-pub struct UdpStream {
+pub(crate) struct UdpStream {
     peer: SocketAddr,
     tx: PollSender<(SocketAddr, Bytes)>,
     rx: mpsc::Receiver<Bytes>,
@@ -20,7 +20,7 @@ pub struct UdpStream {
 }
 
 impl UdpStream {
-    pub fn new<S: ToSocketAddrs>(
+    pub(crate) fn new<S: ToSocketAddrs>(
         peer: S,
         tx: mpsc::Sender<(SocketAddr, Bytes)>,
         rx: mpsc::Receiver<Bytes>,
@@ -40,10 +40,6 @@ impl UdpStream {
                 "Peer address not available",
             ))
         }
-    }
-
-    pub fn peer(&self) -> SocketAddr {
-        self.peer
     }
 }
 
