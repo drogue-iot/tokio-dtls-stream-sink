@@ -1,4 +1,5 @@
 //! Client side UDP/DTLS.
+use super::session::Session;
 use crate::udp::io::UdpIo;
 use openssl::ssl::{Ssl, SslContext};
 use std::io::Result;
@@ -37,7 +38,7 @@ impl Client {
         &self,
         peer: S,
         tls: Option<SslContext>,
-    ) -> Result<Box<dyn PacketFramed>> {
+    ) -> Result<Session> {
         let mut bind = peer.to_socket_addrs()?;
         if let Some(peer) = bind.next() {
             let r = self.io.connect(peer).await?;
@@ -46,9 +47,16 @@ impl Client {
                 Pin::new(&mut dtls).connect().await.map_err(|_| {
                     StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                 })?;
-                Ok(Box::new(FramedWrapper(BytesCodec::new().framed(dtls))))
+                let cert = dtls.ssl().peer_certificate();
+                Ok(Session::new(
+                    Box::new(FramedWrapper(BytesCodec::new().framed(dtls))),
+                    cert,
+                ))
             } else {
-                Ok(Box::new(FramedWrapper(BytesCodec::new().framed(r))))
+                Ok(Session::new(
+                    Box::new(FramedWrapper(BytesCodec::new().framed(r))),
+                    None,
+                ))
             }
         } else {
             Err(std::io::Error::new(

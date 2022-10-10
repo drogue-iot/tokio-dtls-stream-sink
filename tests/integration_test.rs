@@ -1,12 +1,10 @@
-use futures::SinkExt;
-use futures::StreamExt;
 use openssl::ssl::{SslContext, SslFiletype, SslMethod};
 use std::path::PathBuf;
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot;
 
-use tokio_dtls_stream::Client;
-use tokio_dtls_stream::Server;
+use tokio_dtls_stream_sink::Client;
+use tokio_dtls_stream_sink::Server;
 
 #[tokio::test]
 async fn test_plain_client() {
@@ -29,8 +27,10 @@ async fn test_plain_client() {
     let client = Client::new(client);
 
     let mut stream = client.connect(saddr, None).await.unwrap();
-    stream.send("PING".into()).await.unwrap();
-    let rx = stream.next().await.unwrap().unwrap();
+    stream.write(b"PING").await.unwrap();
+
+    let mut rx = [0; 4];
+    let _ = stream.read(&mut rx[..]).await.unwrap();
     s.await.unwrap();
 
     assert_eq!(b"PING", &rx[..]);
@@ -49,19 +49,17 @@ async fn test_plain_server() {
     let s = tokio::spawn(async move {
         let mut c = server.accept(None).await.unwrap();
         loop {
+            let mut rx = [0; 2048];
             tokio::select! {
                 _ = &mut stop => {
                     break;
                 }
-                r = c.next() => match r {
-                    Some(Ok(rx)) => {
-                        assert!(c.send(rx.into()).await.is_ok());
+                r = c.read(&mut rx[..]) => match r {
+                    Ok(len) => {
+                        assert!(c.write(&rx[..len]).await.is_ok());
                     }
-                    Some(Err(e)) => {
+                    Err(e) => {
                         assert!(false, "Error while receiving data: {:?}", e);
-                    }
-                    _ => {
-                        assert!(false, "Stream closed unexpectedly");
                     }
                 }
             }
@@ -111,19 +109,17 @@ async fn test_dtls() {
     let s = tokio::spawn(async move {
         let mut c = server.accept(Some(c)).await.unwrap();
         loop {
+            let mut rx = [0; 2048];
             tokio::select! {
                 _ = &mut stop => {
                     break;
                 }
-                r = c.next() => match r {
-                    Some(Ok(rx)) => {
-                        assert!(c.send(rx.into()).await.is_ok());
+                r = c.read(&mut rx[..]) => match r {
+                    Ok(len) => {
+                        assert!(c.write(&rx[..len]).await.is_ok());
                     }
-                    Some(Err(e)) => {
+                    Err(e) => {
                         assert!(false, "Error while receiving data: {:?}", e);
-                    }
-                    _ => {
-                        assert!(false, "Stream closed unexpectedly");
                     }
                 }
             }
@@ -131,8 +127,9 @@ async fn test_dtls() {
     });
 
     let mut stream = client.connect(saddr, Some(ctx)).await.unwrap();
-    stream.send("PING".into()).await.unwrap();
-    let rx = stream.next().await.unwrap().unwrap();
+    stream.write(b"PING").await.unwrap();
+    let mut rx = [0; 4];
+    let _ = stream.read(&mut rx[..]).await.unwrap();
     sig.send(()).unwrap();
     s.await.unwrap();
 

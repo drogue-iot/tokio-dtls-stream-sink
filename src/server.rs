@@ -1,5 +1,6 @@
 //! Server side UDP/DTLS.
-use super::packet_stream::*;
+use super::packet_stream::FramedWrapper;
+use crate::session::Session;
 use crate::udp::io::UdpIo;
 use crate::udp::stream::UdpStream;
 use core::pin::Pin;
@@ -32,7 +33,7 @@ impl Server {
     }
 
     /// Accept a connection and perform DTLS handshake if context is provided.
-    pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Box<dyn PacketFramed>> {
+    pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Session> {
         match self.accept_rx.recv().await {
             Some(s) => {
                 let s = s?;
@@ -41,9 +42,16 @@ impl Server {
                     Pin::new(&mut dtls).accept().await.map_err(|_| {
                         StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                     })?;
-                    Ok(Box::new(FramedWrapper(BytesCodec::new().framed(dtls))))
+                    let cert = dtls.ssl().peer_certificate();
+                    Ok(Session::new(
+                        Box::new(FramedWrapper(BytesCodec::new().framed(dtls))),
+                        cert,
+                    ))
                 } else {
-                    Ok(Box::new(FramedWrapper(BytesCodec::new().framed(s))))
+                    Ok(Session::new(
+                        Box::new(FramedWrapper(BytesCodec::new().framed(s))),
+                        None,
+                    ))
                 }
             }
             None => Err(std::io::Error::new(

@@ -1,6 +1,6 @@
 [package]
 name = "tokio-dtls-stream-sink"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Tokio-based stream and sink API for UDP datagrams over DTLS"
 keywords = ["dtls", "udp", "openssl", "tokio"]
