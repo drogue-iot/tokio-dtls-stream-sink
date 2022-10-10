@@ -1,0 +1,14 @@
+[package]
+name = "tokio-dtls-stream"
+version = "0.1.0"
+edition = "2021"
+description = "Tokio-based streaming API for UDP + DTLS sessions"
+keywords = ["dtls", "udp", "openssl", "tokio"]
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+tokio = { version = "1", features = ["net", "macros", "rt", "io-util", "time"] }
+tokio-util = "0.7"
+bytes = "1"
+log = "0.4"
+futures = "0.3"
