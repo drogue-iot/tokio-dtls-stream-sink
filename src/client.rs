@@ -10,9 +10,6 @@ use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot;
 use tokio_openssl::SslStream;
-use tokio_util::codec::{BytesCodec, Decoder};
-
-use super::packet_stream::*;
 
 /// A client capable of creating multiple UDP + DTLS sessions.
 pub struct Client {
@@ -47,16 +44,9 @@ impl Client {
                 Pin::new(&mut dtls).connect().await.map_err(|_| {
                     StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                 })?;
-                let cert = dtls.ssl().peer_certificate();
-                Ok(Session::new(
-                    Box::new(FramedWrapper(BytesCodec::new().framed(dtls))),
-                    cert,
-                ))
+                Ok(Session::new_dtls(dtls))
             } else {
-                Ok(Session::new(
-                    Box::new(FramedWrapper(BytesCodec::new().framed(r))),
-                    None,
-                ))
+                Ok(Session::new_udp(r))
             }
         } else {
             Err(std::io::Error::new(

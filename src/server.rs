@@ -1,5 +1,4 @@
 //! Server side UDP/DTLS.
-use super::packet_stream::FramedWrapper;
 use crate::session::Session;
 use crate::udp::io::UdpIo;
 use crate::udp::stream::UdpStream;
@@ -9,7 +8,6 @@ use std::io::{Error as StdError, ErrorKind, Result};
 use tokio::net::UdpSocket;
 use tokio::sync::{mpsc, oneshot};
 use tokio_openssl::SslStream;
-use tokio_util::codec::{BytesCodec, Decoder};
 
 /// Instance of a UDP (+ DTLS) server that can accept new connections in form of
 /// of a packet stream/sink.
@@ -42,16 +40,9 @@ impl Server {
                     Pin::new(&mut dtls).accept().await.map_err(|_| {
                         StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                     })?;
-                    let cert = dtls.ssl().peer_certificate();
-                    Ok(Session::new(
-                        Box::new(FramedWrapper(BytesCodec::new().framed(dtls))),
-                        cert,
-                    ))
+                    Ok(Session::new_dtls(dtls))
                 } else {
-                    Ok(Session::new(
-                        Box::new(FramedWrapper(BytesCodec::new().framed(s))),
-                        None,
-                    ))
+                    Ok(Session::new_udp(s))
                 }
             }
             None => Err(std::io::Error::new(
