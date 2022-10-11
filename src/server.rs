@@ -31,7 +31,7 @@ impl Server {
     }
 
     /// Accept a connection and perform DTLS handshake if context is provided.
-    pub async fn accept(&mut self, tls: Option<SslContext>) -> Result<Session> {
+    pub async fn accept(&mut self, tls: Option<&SslContext>) -> Result<Session> {
         match self.accept_rx.recv().await {
             Some(s) => {
                 let s = s?;

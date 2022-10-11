@@ -107,7 +107,7 @@ async fn test_dtls() {
 
     let c = ctx.clone();
     let s = tokio::spawn(async move {
-        let mut c = server.accept(Some(c)).await.unwrap();
+        let mut c = server.accept(Some(&c)).await.unwrap();
         loop {
             let mut rx = [0; 2048];
             tokio::select! {
