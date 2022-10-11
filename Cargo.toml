@@ -5,6 +5,9 @@ edition = "2021"
 description = "Tokio-based stream and sink API for UDP datagrams over DTLS"
 keywords = ["dtls", "udp", "openssl", "tokio"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/drogue-iot/tokio-dtls-stream-sink"
+homepage = "https://drogue.io"
+readme = "README.md"
 
 [dependencies]
 tokio = { version = "1", features = ["net", "macros", "rt", "io-util", "time"] }
