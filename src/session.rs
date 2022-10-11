@@ -3,24 +3,28 @@ use crate::udp::stream::UdpStream;
 use bytes::Bytes;
 use futures::{SinkExt, StreamExt};
 use openssl::ssl::SslRef;
-use std::io::{Error as StdError, ErrorKind, Result};
+use std::{
+    io::{Error as StdError, ErrorKind, Result},
+    net::SocketAddr,
+};
 use tokio_openssl::SslStream;
 use tokio_util::codec::{BytesCodec, Decoder, Framed};
 
 /// A UDP + DTLS session.
 pub struct Session {
     inner: Inner,
+    peer: SocketAddr,
 }
 
 impl Session {
-    pub(crate) fn new_udp(stream: UdpStream) -> Self {
+    pub(crate) fn new_udp(stream: UdpStream, peer: SocketAddr) -> Self {
         let inner = Inner::UDP(BytesCodec::new().framed(stream));
-        Self { inner }
+        Self { inner, peer }
     }
 
-    pub(crate) fn new_dtls(stream: SslStream<UdpStream>) -> Self {
+    pub(crate) fn new_dtls(stream: SslStream<UdpStream>, peer: SocketAddr) -> Self {
         let inner = Inner::DTLS(BytesCodec::new().framed(stream));
-        Self { inner }
+        Self { inner, peer }
     }
 
     /// Get a reference to the SSL context, if present
@@ -29,6 +33,11 @@ impl Session {
             Inner::UDP(_) => None,
             Inner::DTLS(s) => Some(s.get_ref().ssl()),
         }
+    }
+
+    /// Turn into the underlying stream/sink.
+    pub fn peer(&self) -> SocketAddr {
+        self.peer
     }
 
     /// Turn into the underlying stream/sink.

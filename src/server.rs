@@ -35,14 +35,15 @@ impl Server {
         match self.accept_rx.recv().await {
             Some(s) => {
                 let s = s?;
+                let peer = s.peer();
                 if let Some(ctx) = &tls {
                     let mut dtls = SslStream::new(Ssl::new(&ctx)?, s)?;
                     Pin::new(&mut dtls).accept().await.map_err(|_| {
                         StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                     })?;
-                    Ok(Session::new_dtls(dtls))
+                    Ok(Session::new_dtls(dtls, peer))
                 } else {
-                    Ok(Session::new_udp(s))
+                    Ok(Session::new_udp(s, peer))
                 }
             }
             None => Err(std::io::Error::new(

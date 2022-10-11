@@ -44,9 +44,9 @@ impl Client {
                 Pin::new(&mut dtls).connect().await.map_err(|_| {
                     StdError::new(ErrorKind::ConnectionReset, "Error during TLS handshake")
                 })?;
-                Ok(Session::new_dtls(dtls))
+                Ok(Session::new_dtls(dtls, peer))
             } else {
-                Ok(Session::new_udp(r))
+                Ok(Session::new_udp(r, peer))
             }
         } else {
             Err(std::io::Error::new(

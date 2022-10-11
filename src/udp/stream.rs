@@ -41,6 +41,10 @@ impl UdpStream {
             ))
         }
     }
+
+    pub(crate) fn peer(&self) -> SocketAddr {
+        self.peer
+    }
 }
 
 impl Drop for UdpStream {
