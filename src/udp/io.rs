@@ -90,8 +90,8 @@ impl UdpIo {
                             };
                             if let Some(tx_in) = entry {
                                 if let Err(e) = tx_in.send(Bytes::copy_from_slice(&buf[..size])).await {
-                                    log::warn!("IO error: {:?}", e);
-                                    return Err(StdError::new(ErrorKind::ConnectionReset, "Error transmitting data"));
+                                    log::warn!("IO error sending data to session (closing): {:?}", e);
+                                    let _ = peers.remove(&src);
                                 }
                             }
                         }
@@ -107,8 +107,7 @@ impl UdpIo {
                             match self.socket.send_to(&data[..], &dest).await {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    log::warn!("IO error: {:?}", e);
-                                    return Err(e);
+                                    log::warn!("IO error while sending data to {}: {:?}", dest, e);
                                 }
                             }
                         }
