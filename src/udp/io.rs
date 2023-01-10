@@ -103,18 +103,18 @@ impl UdpIo {
                 }
                 outbound = rx_out.recv() => {
                     match outbound {
-                    Some((dest, data)) => {
-                        match self.socket.send_to(&data[..], &dest).await {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log::warn!("IO error: {:?}", e);
-                                return Err(e);
+                        Some((dest, data)) => {
+                            match self.socket.send_to(&data[..], &dest).await {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    log::warn!("IO error: {:?}", e);
+                                    return Err(e);
+                                }
                             }
                         }
-                    }
-                    None => {
-                        return Ok(())
-                    }
+                        None => {
+                            return Ok(())
+                        }
                     }
                 }
                 done = rx_done.recv() => {
