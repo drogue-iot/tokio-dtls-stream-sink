@@ -4,11 +4,11 @@ use std::io::Result;
 
 /// Unified trait for a packet stream and sink
 pub trait PacketFramed:
-    futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>>
+    futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin + Send
 {
 }
 
 impl<T> PacketFramed for T where
-    T: futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>>
+    T: futures::Sink<Bytes, Error = StdError> + futures::Stream<Item = Result<BytesMut>> + Unpin + Send
 {
 }
